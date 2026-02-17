@@ -98,10 +98,35 @@ export async function generateWithLLM(
   const openai = new OpenAI({ apiKey });
 
   const system = `You are an ad creative strategist. Given website content, produce exactly 6 ad concepts in JSON format.
-Schema: profile (business_name, category_guess, location_guess?, value_props, tone, keywords),
-ads: array of 6 ad concepts in this exact order: 2x5-second, 2x15-second, 2x30-second.
-Each ad: duration_seconds, hook (1-2 sec grabber), angle (story), storyboard (timestamped scenes), voiceover_script, cta_options, platform_variants { meta_vertical_9_16, youtube_horizontal_16_9 }.
-Respond with valid JSON only.`;
+
+Response schema (valid JSON only):
+{
+  "profile": {
+    "business_name": "string",
+    "category_guess": "string",
+    "location_guess": "string or null",
+    "value_props": ["string"],
+    "tone": "string",
+    "keywords": ["string"],
+    "assets_needed": ["Logo", "Product photos", "etc - inferred from website"]
+  },
+  "ads": [
+    {
+      "duration_seconds": 5|15|30,
+      "hook": "1-2 sec attention grabber",
+      "angle": "the story/positioning",
+      "storyboard": [{"timestamp": "0:00-0:05", "description": "scene", "on_screen_text": "optional"}],
+      "voiceover_script": "full script",
+      "cta_options": ["string"],
+      "platform_variants": {
+        "meta_vertical_9_16": "format notes for 9:16",
+        "youtube_horizontal_16_9": "format notes for 16:9"
+      }
+    }
+  ]
+}
+
+Order: 2x5s, 2x15s, 2x30s. Infer assets_needed from site content (logo, photos, testimonials, etc).`;
 
   const content = `
 Website content:
@@ -155,6 +180,7 @@ Images (URLs only, do not fetch): ${extraction.imageUrls.slice(0, 10).join(", ")
       value_props: parsed.profile.value_props ?? profile.value_props,
       tone: parsed.profile.tone ?? profile.tone,
       keywords: parsed.profile.keywords ?? profile.keywords,
+      assets_needed: parsed.profile.assets_needed ?? profile.assets_needed,
     }),
   };
 
